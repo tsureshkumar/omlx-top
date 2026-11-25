@@ -3,6 +3,8 @@
 An htop-style terminal monitor for a local [oMLX](https://github.com/jundot/omlx) server,
 focused on performance and bottlenecks.
 
+![omlx-top demo: live server stats while switching between views](docs/demo.gif)
+
 ```
 go build -o omlx-top . && ./omlx-top
 ```
@@ -102,3 +104,11 @@ The admin API needs oMLX's **main** API key. It is taken from `-api-key`, then
 ```
 go test ./...
 ```
+
+## License
+
+[MIT](LICENSE)
+
+---
+
+Assisted by AI and manually reviewed and tested.
