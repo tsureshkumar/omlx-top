@@ -228,7 +228,7 @@ func (m model) throughput(p *page, st *State) {
 		return fmt.Sprintf("%7.0f       %s", cur, cDim.Render(fmt.Sprintf("peak %.0f", peak)))
 	})
 	row("gpu", cBlue, func(s Sample) float64 { return s.GPU }, 100, func(cur, _ float64) string {
-		return fmt.Sprintf("%7s", opt(cur, func(f float64) string { return fmt.Sprintf("%.0f%%", f) }))
+		return fmt.Sprintf("%7s", pctOrDash(cur))
 	})
 	if _, ceil := st.omlxMemory(); ceil > 0 {
 		row("oMLX mem", cHead, func(s Sample) float64 { return s.OMLXMem }, ceil, func(cur, peak float64) string {

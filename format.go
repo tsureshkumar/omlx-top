@@ -100,6 +100,14 @@ func meter(label string, pct float64, w int, extra string) string {
 	return cBold.Render(label) + "[" + bar(pct/100, w, st) + "]" + st.Render(fmt.Sprintf("%3.0f%%", pct)) + " " + extra
 }
 
+// pctOrDash formats a percentage, or "-" when it is negative (unknown).
+func pctOrDash(v float64) string {
+	if v < 0 {
+		return "-"
+	}
+	return fmt.Sprintf("%.0f%%", v)
+}
+
 // spark draws the last w values scaled to top (or to their maximum when top is 0).
 // Negative values mean "no data".
 func spark(v []float64, w int, top float64) string {
