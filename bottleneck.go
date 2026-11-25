@@ -267,7 +267,7 @@ func Analyze(s *State, now time.Time) []Finding {
 		add(sevWarn, "gpu", "GPU mostly idle while requests are active", fmt.Sprintf("under %.0f%% for %d samples (%s)", idleGPUPct, idleGPUSamples, strings.Join(busyModels, ", ")),
 			"Something else is the limit: SSD cache I/O, swap, tokenization, or a slow client")
 	}
-	if now.Sub(s.Power.T) < 15*time.Second && s.Power.GPUTemp >= hotGPUTemp {
+	if now.Sub(s.Power.T) < powerMaxAge && s.Power.GPUTemp >= hotGPUTemp {
 		add(sevWarn, "thermal", "GPU is running hot", fmt.Sprintf("%.0f°C", s.Power.GPUTemp), "Thermal throttling likely; improve cooling or enable High Power Mode")
 	}
 

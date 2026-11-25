@@ -291,7 +291,7 @@ func (m model) system(p *page, st *State, now time.Time) {
 	if len(s.OMLX) > 0 {
 		l += cDim.Render("  omlx procs ") + fmt.Sprintf("%d, cpu %.0f%%, rss %s", len(s.OMLX), s.OMLXCPU, fmtBytes(s.OMLXRSS))
 	}
-	if pw := st.Power; now.Sub(pw.T) < 15*time.Second {
+	if pw := st.Power; now.Sub(pw.T) < powerMaxAge {
 		l += cDim.Render("  gpu ") + fmt.Sprintf("%.0f°C %.1fW", pw.GPUTemp, pw.GPUWatts)
 		if pw.GPUMHz > 0 {
 			l += fmt.Sprintf(" %.0fMHz", pw.GPUMHz)

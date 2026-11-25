@@ -21,6 +21,9 @@ type PowerInfo struct {
 	GPUMHz   float64
 }
 
+// powerMaxAge is how long a macmon reading stays usable.
+const powerMaxAge = 15 * time.Second
+
 // parseMacmon reads one line of `macmon pipe`, accepting old and new field names.
 func parseMacmon(line []byte) (PowerInfo, bool) {
 	var m struct {
