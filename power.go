@@ -19,6 +19,11 @@ type PowerInfo struct {
 	ANEWatts float64
 	SysWatts float64
 	GPUMHz   float64
+
+	// GPU load averaged over the sampling interval, 0..100.
+	HasLoad   bool
+	GPUScaled float64 // adjusted for clock speed, as macmon displays it
+	GPUActive float64 // share of the time the GPU was doing any work
 }
 
 // powerMaxAge is how long a macmon reading stays usable.
@@ -36,6 +41,8 @@ func parseMacmon(line []byte) (PowerInfo, bool) {
 		ANEPower float64   `json:"ane_power"`
 		SysPower float64   `json:"sys_power"`
 		GPUFreq  float64   `json:"gpu_freq_mhz"`
+		Scaled   *float64  `json:"gpu_scaled_ratio"`
+		Active   *float64  `json:"gpu_active_ratio"`
 		GPUUsage []float64 `json:"gpu_usage"` // older releases: [MHz, ratio]
 	}
 	if json.Unmarshal(line, &m) != nil || m.Temp == nil {
@@ -45,6 +52,16 @@ func parseMacmon(line []byte) (PowerInfo, bool) {
 		GPUWatts: m.GPUPower, ANEWatts: m.ANEPower, SysWatts: m.SysPower, GPUMHz: m.GPUFreq}
 	if p.GPUMHz == 0 && len(m.GPUUsage) == 2 {
 		p.GPUMHz = m.GPUUsage[0]
+	}
+	scaled, active := m.Scaled, m.Active
+	if scaled == nil && len(m.GPUUsage) == 2 {
+		scaled = &m.GPUUsage[1]
+	}
+	if scaled != nil {
+		if active == nil {
+			active = scaled
+		}
+		p.HasLoad, p.GPUScaled, p.GPUActive = true, 100**scaled, 100**active
 	}
 	return p, true
 }

@@ -432,7 +432,7 @@ func healthy(now time.Time) *State {
 	st.Activity = &Activity{MemUsed: 10 << 30, MemMax: 80 << 30, Pressure: MemPressure{Level: "ok"}}
 	st.Sys = SysInfo{OK: true, T: now, GPUUtil: 90, Pressure: 1, DiskFree: 500 << 30, WiredLimit: -1}
 	for i := range 20 {
-		st.History = append(st.History, Sample{T: now.Add(time.Duration(i-19) * time.Second), GPU: 90})
+		st.History = append(st.History, Sample{T: now.Add(time.Duration(i-19) * time.Second), GPU: 90, GPUBusy: 90})
 	}
 	return st
 }
@@ -480,7 +480,7 @@ func TestAnalyzeRules(t *testing.T) {
 		{"pressure is critical", func(s *State) { s.Sys.Pressure = 4 }},
 		{"Ollama is competing", func(s *State) { s.Sys.OllamaRSS = 8 << 30 }},
 		{"queueing", hist(func(x *Sample) { x.Waiting = 3 })},
-		{"GPU mostly idle", hist(func(x *Sample) { x.Busy, x.GPU = true, 4 })},
+		{"GPU mostly idle", hist(func(x *Sample) { x.Busy, x.GPUBusy = true, 4 })},
 		{"throttled", signals("throttle", 1)},
 		{"requeued", signals("requeue", 1)},
 		{"aborted", signals("mem-abort", 1)},
@@ -559,6 +559,35 @@ func TestParseSystem(t *testing.T) {
 	} {
 		if p, ok := parseMacmon([]byte(line)); !ok || p.GPUTemp != 61 || p.GPUMHz != 1398 || p.GPUWatts != 12.5 {
 			t.Fatalf("macmon: %+v %v", p, ok)
+		}
+	}
+	for _, c := range []struct {
+		fields         string
+		scaled, active float64
+	}{
+		{`"gpu_scaled_ratio":0.3,"gpu_active_ratio":0.5`, 30, 50},
+		{`"gpu_usage":[1398,0.25]`, 25, 25},
+		{`"gpu_scaled_ratio":0,"gpu_active_ratio":0`, 0, 0},
+	} {
+		p, ok := parseMacmon([]byte(`{"temp":{},` + c.fields + `}`))
+		if !ok || !p.HasLoad || p.GPUScaled != c.scaled || p.GPUActive != c.active {
+			t.Fatalf("macmon load %s: %+v", c.fields, p)
+		}
+	}
+	now := time.Now()
+	st := NewState(Config{})
+	st.Sys = SysInfo{OK: true, GPUUtil: 100}
+	for _, c := range []struct {
+		power      PowerInfo
+		load, busy float64
+	}{
+		{PowerInfo{T: now, HasLoad: true, GPUScaled: 30, GPUActive: 50}, 30, 50},
+		{PowerInfo{T: now.Add(-time.Minute), HasLoad: true, GPUScaled: 30}, 100, 100}, // stale
+		{PowerInfo{T: now}, 100, 100}, // macmon without a load figure
+	} {
+		st.Power = c.power
+		if load, busy := st.gpuLoad(now); load != c.load || busy != c.busy {
+			t.Fatalf("gpuLoad(%+v) = %v, %v", c.power, load, busy)
 		}
 	}
 	if _, ok := parseMacmon([]byte(`Error: "Failed to create subscription"`)); ok {

@@ -263,8 +263,8 @@ func Analyze(s *State, now time.Time) []Finding {
 			}
 		}
 	}
-	if h := s.lastN(idleGPUSamples, now); !loading && all(h, func(x Sample) bool { return x.Busy && !x.LoadingModel && x.GPU >= 0 && x.GPU < idleGPUPct }) {
-		add(sevWarn, "gpu", "GPU mostly idle while requests are active", fmt.Sprintf("under %.0f%% for %d samples (%s)", idleGPUPct, idleGPUSamples, strings.Join(busyModels, ", ")),
+	if h := s.lastN(idleGPUSamples, now); !loading && all(h, func(x Sample) bool { return x.Busy && !x.LoadingModel && x.GPUBusy >= 0 && x.GPUBusy < idleGPUPct }) {
+		add(sevWarn, "gpu", "GPU mostly idle while requests are active", fmt.Sprintf("busy under %.0f%% of the time for %d samples (%s)", idleGPUPct, idleGPUSamples, strings.Join(busyModels, ", ")),
 			"Something else is the limit: SSD cache I/O, swap, tokenization, or a slow client")
 	}
 	if now.Sub(s.Power.T) < powerMaxAge && s.Power.GPUTemp >= hotGPUTemp {

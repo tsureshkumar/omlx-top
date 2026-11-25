@@ -84,7 +84,8 @@ type Sample struct {
 	T                  time.Time
 	PreTPS, DecTPS     float64
 	Active, Waiting    int
-	GPU                float64 // -1 unknown
+	GPU                float64 // load shown on screen, -1 unknown
+	GPUBusy            float64 // share of time the GPU was working, -1 unknown
 	OMLXMem            float64 // -1 unknown
 	SwapOutRate        float64 // bytes/s
 	Busy, LoadingModel bool
@@ -488,16 +489,28 @@ func (s *State) liveTotals() (preTPS, decTPS float64, active, waiting int, loadi
 
 // record appends one history sample. Caller holds lock.
 func (s *State) record(now time.Time) {
-	sm := Sample{T: now, GPU: -1, OMLXMem: -1, SwapOutRate: s.Sys.SwapOutRate}
+	sm := Sample{T: now, GPU: -1, GPUBusy: -1, OMLXMem: -1, SwapOutRate: s.Sys.SwapOutRate}
 	sm.PreTPS, sm.DecTPS, sm.Active, sm.Waiting, sm.LoadingModel = s.liveTotals()
 	sm.Busy = sm.Active > 0
-	if s.Sys.OK {
-		sm.GPU = s.Sys.GPUUtil
-	}
+	sm.GPU, sm.GPUBusy = s.gpuLoad(now)
 	if cur, _ := s.omlxMemory(); cur > 0 {
 		sm.OMLXMem = cur
 	}
 	s.History = tail(append(s.History, sm), maxHistory)
+}
+
+// gpuLoad returns the GPU load to display and the share of time it was working,
+// both 0..100 or -1 when unknown. macmon averages over its whole interval. The
+// ioreg figure is a fallback: it can jump between 0 and 100 under bursty load.
+// Caller holds lock.
+func (s *State) gpuLoad(now time.Time) (load, busy float64) {
+	if p := s.Power; p.HasLoad && now.Sub(p.T) < powerMaxAge {
+		return p.GPUScaled, p.GPUActive
+	}
+	if s.Sys.OK {
+		return s.Sys.GPUUtil, s.Sys.GPUUtil
+	}
+	return -1, -1
 }
 
 // omlxMemory returns oMLX's memory use and ceiling from the best available source.

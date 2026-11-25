@@ -246,8 +246,9 @@ func (m model) system(p *page, st *State, now time.Time) {
 		memPct = 100 * s.MemUsed / s.MemTotal
 	}
 	if s.OK {
-		cpu, gpu = s.CPU, s.GPUUtil
+		cpu = s.CPU
 	}
+	gpu, _ = st.gpuLoad(now)
 	used, ceil := st.omlxMemory()
 	omPct := -1.0
 	omText := ""

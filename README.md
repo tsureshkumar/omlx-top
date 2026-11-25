@@ -24,6 +24,10 @@ the oMLX base directory (`~/.omlx`).
 The top lines always show CPU, GPU, RAM, oMLX memory against its ceiling, swap, and (if
 [macmon](https://github.com/vladkens/macmon) is installed) GPU temperature, power and clock.
 
+With macmon, GPU load is its frequency-scaled figure, averaged over the poll interval; the
+*GPU idle* check uses its active-time figure. Without macmon both come from `ioreg`, which
+can jump between 0% and 100% under bursty load.
+
 Keys: `q` quit · `1-6`/`tab` views · `j/k` select or scroll · `p` pause · `r` reset local
 history · `u` usage range · `?` help · `esc` overview
 
